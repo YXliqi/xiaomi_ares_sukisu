@@ -12,6 +12,11 @@ on:
         description: '源码分支名称或修订版'
         required: true
         default: 'U-dev'
+      SUKISU_BRANCH:
+        description: 'SukiSU 分支名称或修订版'
+        required: false
+        default: 'builtin'
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -51,7 +56,7 @@ jobs:
       - name: Get Kernel Source Code
         uses: actions/checkout@v5
         with:
-          repository: YXliqi/android_kernel_aresin
+          repository: MerCuJerry/android_kernel_aresin
           ref: ${{ inputs.SOURCECODE_BRANCH }}
           path: kernel
       
@@ -63,6 +68,16 @@ jobs:
           7za x llvm22.0.0-binutils2.44_amd64-kernel-arm_static-20251116.7z
           rm llvm22.0.0-binutils2.44_amd64-kernel-arm_static-20251116.7z
       
+      - name: Set up SukiSU
+        working-directory: kernel
+        run: |
+          echo DATE=$(date +%F) >> $GITHUB_ENV
+          export BRANCH=${{ inputs.SUKISU_BRANCH }}
+          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s $BRANCH
+          cd ./KernelSU
+          export KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 40000 "-" 2815)
+          echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+          sed -i "s/DKSU_VERSION=12800/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
 
       - name: Get SukiSU Patches
         uses: actions/checkout@v5
